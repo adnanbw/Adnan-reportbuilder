@@ -1,0 +1,113 @@
+.designer-container {
+  display: flex;
+  height: 100vh;
+}
+
+.toolbar {
+  width: 20%;
+  background-color: #f0f0f0;
+  padding: 15px;
+}
+
+.designer-canvas {
+  width: 80%;
+  padding: 15px;
+  border: 2px dashed #ccc;
+  background-color: #fafafa;
+  margin: auto;
+  position: relative;
+}
+
+.row {
+  width: 100%;
+  margin-bottom: 20px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+
+.add-column-button {
+  margin-bottom: 10px;
+  padding: 5px;
+  cursor: pointer;
+}
+
+.columns-container {
+  display: flex;
+}
+
+.column {
+  flex: 1;
+  min-height: 100px;
+  border: 1px solid #ddd;
+  margin-right: 10px;
+  padding: 10px;
+  background-color: #fff;
+}
+
+.element {
+  padding: 10px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  background-color: #f9f9f9;
+}
+
+.draggable-element {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px dashed #ccc;
+  cursor: move;
+}
+
+.column-controls {
+  margin-bottom: 10px;
+  display: flex;
+  gap: 5px;
+}
+
+.column {
+  flex: 1;
+  min-height: 100px;
+  border: 1px solid #ddd;
+  margin-right: 10px;
+  padding: 10px;
+  background-color: #fff;
+  position: relative;
+}
+
+.column-controls {
+  display: none;
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  gap: 5px;
+}
+
+.column:hover .column-controls {
+  display: flex;
+}
+
+.column-control-icon {
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.table-component {
+  margin-top: 10px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: center;
+}
+
+button {
+  margin: 5px;
+  padding: 5px;
+}
+

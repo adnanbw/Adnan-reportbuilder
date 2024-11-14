@@ -1,0 +1,30 @@
+.designer-container {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .toolbar {
+    width: 20%;
+    background-color: #f0f0f0;
+    padding: 15px;
+  }
+  
+  .designer-canvas {
+    width: 60%;
+    padding: 15px;
+    border: 1px solid #ccc;
+    margin: auto;
+  }
+  
+  .top-bar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: #fff;
+    border-bottom: 1px solid #ccc;
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px;
+    gap: 10px;
+  }
+  

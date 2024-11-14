@@ -1,91 +1,117 @@
+// Import necessary React modules
 import React from 'react';
 import './TopBar.css';
 
 function TopBar({ selectedElement, setStyle }) {
-  if (!selectedElement) {
-    return null; // Don't show the top bar if no element is selected
-  }
-
   const handleStyleChange = (styleProp, value) => {
+    if (!selectedElement) return; // Prevent style change if no element is selected
+
     setStyle((prevStyle) => ({
       ...prevStyle,
-      [styleProp]: value,
+      [selectedElement.id]: {
+        ...prevStyle[selectedElement.id],
+        [styleProp]: value,
+      },
     }));
   };
 
   return (
-    <div className="top-bar">
+    <div className="top-bar header" style={{ position: 'fixed', top: 0, left: 0, right: 0, background: '#fff', padding: '10px', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'space-around' }}>
       {/* Text Alignment */}
-      <div className="top-bar-section">
-        <button onClick={() => handleStyleChange('textAlign', 'left')}>Left</button>
-        <button onClick={() => handleStyleChange('textAlign', 'center')}>Center</button>
-        <button onClick={() => handleStyleChange('textAlign', 'right')}>Right</button>
-        <button onClick={() => handleStyleChange('textAlign', 'justify')}>Justify</button>
+      <div className="style-group">
+        <label>Text Alignment:</label>
+        <button onClick={() => handleStyleChange('textAlign', 'left')} disabled={!selectedElement}>Left</button>
+        <button onClick={() => handleStyleChange('textAlign', 'center')} disabled={!selectedElement}>Center</button>
+        <button onClick={() => handleStyleChange('textAlign', 'right')} disabled={!selectedElement}>Right</button>
+        <button onClick={() => handleStyleChange('textAlign', 'justify')} disabled={!selectedElement}>Justify</button>
       </div>
 
-      {/* Font Size & Font Family */}
-      <div className="top-bar-section">
-        <select
-          onChange={(e) => handleStyleChange('fontSize', e.target.value)}
-          defaultValue={selectedElement?.style?.fontSize || '16px'}
-        >
-          <option value="12px">12</option>
-          <option value="14px">14</option>
-          <option value="16px">16</option>
-          <option value="18px">18</option>
-          <option value="24px">24</option>
-          <option value="32px">32</option>
-        </select>
-        <select
-          onChange={(e) => handleStyleChange('fontFamily', e.target.value)}
-          defaultValue={selectedElement?.style?.fontFamily || 'Arial'}
-        >
-          <option value="Arial">Arial</option>
-          <option value="Verdana">Verdana</option>
-          <option value="Times New Roman">Times New Roman</option>
-          <option value="Tahoma">Tahoma</option>
-        </select>
+      {/* Font Size */}
+      <div className="style-group">
+        <label>Font Size:</label>
+        <input
+          type="number"
+          defaultValue={16}
+          onChange={(e) => handleStyleChange('fontSize', `${e.target.value}px`)}
+          disabled={!selectedElement}
+        />
       </div>
 
-      {/* Font Styles */}
-      <div className="top-bar-section">
-        <button onClick={() => handleStyleChange('fontWeight', 'bold')}>Bold</button>
-        <button onClick={() => handleStyleChange('fontStyle', 'italic')}>Italic</button>
-        <button onClick={() => handleStyleChange('textDecoration', 'underline')}>Underline</button>
+      {/* Font Weight */}
+      <div className="style-group">
+        <label>Font Weight:</label>
+        <button onClick={() => handleStyleChange('fontWeight', 'normal')} disabled={!selectedElement}>Normal</button>
+        <button onClick={() => handleStyleChange('fontWeight', 'bold')} disabled={!selectedElement}>Bold</button>
       </div>
 
-      {/* Font & Background Colors */}
-      <div className="top-bar-section">
+      {/* Font Style */}
+      <div className="style-group">
+        <label>Font Style:</label>
+        <button onClick={() => handleStyleChange('fontStyle', 'normal')} disabled={!selectedElement}>Normal</button>
+        <button onClick={() => handleStyleChange('fontStyle', 'italic')} disabled={!selectedElement}>Italic</button>
+      </div>
+
+      {/* Text Decoration */}
+      <div className="style-group">
+        <label>Text Decoration:</label>
+        <button onClick={() => handleStyleChange('textDecoration', 'none')} disabled={!selectedElement}>None</button>
+        <button onClick={() => handleStyleChange('textDecoration', 'underline')} disabled={!selectedElement}>Underline</button>
+      </div>
+
+      {/* Font Color */}
+      <div className="style-group">
         <label>Font Color:</label>
         <input
           type="color"
+          defaultValue="#000000"
           onChange={(e) => handleStyleChange('color', e.target.value)}
-          defaultValue={selectedElement?.style?.color || '#000000'}
+          disabled={!selectedElement}
         />
+      </div>
+
+      {/* Background Color */}
+      <div className="style-group">
         <label>Background Color:</label>
         <input
           type="color"
+          defaultValue="#ffffff"
           onChange={(e) => handleStyleChange('backgroundColor', e.target.value)}
-          defaultValue={selectedElement?.style?.backgroundColor || '#ffffff'}
+          disabled={!selectedElement}
         />
       </div>
 
       {/* Border Settings */}
-      <div className="top-bar-section">
-        <label>Border:</label>
+      <div className="style-group">
+        <label>Border Style:</label>
         <select
           onChange={(e) => handleStyleChange('borderStyle', e.target.value)}
-          defaultValue={selectedElement?.style?.borderStyle || 'none'}
+          defaultValue="none"
+          disabled={!selectedElement}
         >
           <option value="none">None</option>
           <option value="solid">Solid</option>
           <option value="dashed">Dashed</option>
           <option value="dotted">Dotted</option>
         </select>
+      </div>
+
+      <div className="style-group">
+        <label>Border Color:</label>
         <input
           type="color"
+          defaultValue="#000000"
           onChange={(e) => handleStyleChange('borderColor', e.target.value)}
-          defaultValue={selectedElement?.style?.borderColor || '#000000'}
+          disabled={!selectedElement}
+        />
+      </div>
+
+      <div className="style-group">
+        <label>Border Width:</label>
+        <input
+          type="number"
+          defaultValue={0}
+          onChange={(e) => handleStyleChange('borderWidth', `${e.target.value}px`)}
+          disabled={!selectedElement}
         />
       </div>
     </div>

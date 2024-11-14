@@ -1,31 +1,34 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowLeft, faArrowRight, faTrash } from '@fortawesome/free-solid-svg-icons';
 import TopBar from './TopBar';
 import './DesignerPage.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowLeft, faArrowRight, faTrash, faUndo, faRedo } from '@fortawesome/free-solid-svg-icons';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 
 const ItemTypes = {
   TEXT: 'text',
-  TABLE: 'table',
-  CHART: 'chart',
-  COLUMN: 'column',
 };
 
 function DesignerPage() {
   const [rows, setRows] = useState([]);
-  const [selectedElement, setSelectedElement] = useState(null);
-  const [elementStyle, setElementStyle] = useState({});
+  const [selectedElementId, setSelectedElementId] = useState(null);
+  const [elementData, setElementData] = useState({});
+  const [undoHistory, setUndoHistory] = useState([]);
+  const [redoHistory, setRedoHistory] = useState([]);;
 
   const addRow = () => {
+    saveState();
     const newRow = {
-      id: rows.length + 1,
+      id: `row-${rows.length + 1}`,
       columns: [],
     };
     setRows([...rows, newRow]);
   };
 
   const addColumnToRow = (rowId) => {
+    saveState();
     const updatedRows = rows.map((row) => {
       if (row.id === rowId) {
         return {
@@ -44,18 +47,72 @@ function DesignerPage() {
     setRows(updatedRows);
   };
 
+  const saveState = () => {
+    setUndoHistory([...undoHistory, rows]);
+    setRedoHistory([]); // Clear redo history on new action
+  };
+
+  const undo = () => {
+    if (undoHistory.length > 0) {
+      setRedoHistory([rows, ...redoHistory]);
+      setRows(undoHistory[undoHistory.length - 1]);
+      setUndoHistory(undoHistory.slice(0, -1));
+    }
+  };
+
+  const redo = () => {
+    if (redoHistory.length > 0) {
+      setUndoHistory([...undoHistory, rows]);
+      setRows(redoHistory[0]);
+      setRedoHistory(redoHistory.slice(1));
+    }
+  };
+
+  const updateElementContent = (id, content) => {
+    saveState();
+    setElementData((prevData) => ({
+      ...prevData,
+      [id]: {
+        ...prevData[id],
+        content: content,
+      },
+    }));
+  };
+
+  const deleteElement = (elementId) => {
+    saveState();
+    setRows((prevRows) =>
+      prevRows.map((row) => ({
+        ...row,
+        columns: row.columns.map((col) => ({
+          ...col,
+          elements: col.elements.filter((element) => element.id !== elementId),
+        })),
+      }))
+    );
+  };
+
   return (
-    <div className="designer-container">
-      <TopBar selectedElement={selectedElement} setStyle={setElementStyle} />
-      <div className="toolbar">
-        <h3>Elements</h3>
-        {/* Draggable Elements Section */}
-        <DraggableElement type={ItemTypes.TEXT}>Text</DraggableElement>
-        <DraggableElement type={ItemTypes.TABLE}>Table</DraggableElement>
-        <DraggableElement type={ItemTypes.CHART}>Chart</DraggableElement>
-        <button onClick={addRow}>Add Row</button>
-      </div>
-      <div className="designer-canvas">
+    <div
+      className="designer-container"
+      onClick={() => setSelectedElementId(null)} // Deselect element when clicking outside
+    >
+      <TopBar selectedElement={selectedElementId} setStyle={updateElementContent} />
+
+      <div className="toolbar" onClick={(e) => e.stopPropagation()}>
+  <h3>Elements</h3>
+  <DraggableElement type={ItemTypes.TEXT}>Text</DraggableElement>
+  <button onClick={addRow}>Add Row</button>
+  <button onClick={undo} disabled={undoHistory.length === 0}>
+    <FontAwesomeIcon icon={faUndo} /> Undo
+  </button>
+  <button onClick={redo} disabled={redoHistory.length === 0}>
+    <FontAwesomeIcon icon={faRedo} /> Redo
+  </button>
+</div>
+
+
+      <div className="designer-canvas" onClick={(e) => e.stopPropagation()}>
         <h3>Report Preview Area</h3>
         {rows.map((row) => (
           <Row
@@ -64,7 +121,11 @@ function DesignerPage() {
             setRows={setRows}
             rows={rows}
             addColumnToRow={addColumnToRow}
-            setSelectedElement={setSelectedElement}
+            setSelectedElementId={setSelectedElementId}
+            selectedElementId={selectedElementId}
+            elementData={elementData}
+            updateElementContent={updateElementContent}
+            deleteElement={deleteElement}
           />
         ))}
       </div>
@@ -72,41 +133,26 @@ function DesignerPage() {
   );
 }
 
-function Row({ row, setRows, rows, addColumnToRow, setSelectedElement }) {
-  const moveColumn = (columnId, direction) => {
-    const updatedRows = rows.map((r) => {
-      if (r.id === row.id) {
-        const index = r.columns.findIndex((col) => col.id === columnId);
-        if (index < 0) return r;
 
-        const newColumns = [...r.columns];
-        if (direction === 'left' && index > 0) {
-          [newColumns[index - 1], newColumns[index]] = [newColumns[index], newColumns[index - 1]];
-        } else if (direction === 'right' && index < newColumns.length - 1) {
-          [newColumns[index + 1], newColumns[index]] = [newColumns[index], newColumns[index + 1]];
-        }
-        return { ...r, columns: newColumns };
-      }
-      return r;
-    });
-    setRows(updatedRows);
-  };
-
+function Row({ row, setRows, rows, addColumnToRow, setSelectedElementId, selectedElementId, elementData, updateElementContent, deleteElement }) {
   return (
     <div className="row">
       <button className="add-column-button" onClick={() => addColumnToRow(row.id)}>
         Add Column
       </button>
       <div className="columns-container">
-        {row.columns.map((column, index) => (
+        {row.columns.map((column) => (
           <Column
             key={column.id}
             column={column}
             rowId={row.id}
             setRows={setRows}
             rows={rows}
-            moveColumn={moveColumn}
-            setSelectedElement={setSelectedElement}
+            setSelectedElementId={setSelectedElementId}
+            selectedElementId={selectedElementId}
+            elementData={elementData}
+            updateElementContent={updateElementContent}
+            deleteElement={deleteElement}
           />
         ))}
       </div>
@@ -114,9 +160,9 @@ function Row({ row, setRows, rows, addColumnToRow, setSelectedElement }) {
   );
 }
 
-function Column({ column, rowId, setRows, rows, moveColumn, setSelectedElement }) {
+function Column({ column, rowId, setRows, rows, setSelectedElementId, selectedElementId, elementData, updateElementContent, deleteElement }) {
   const [{ isOver }, drop] = useDrop({
-    accept: [ItemTypes.TEXT, ItemTypes.TABLE, ItemTypes.CHART],
+    accept: [ItemTypes.TEXT],
     drop: (item) => {
       const updatedRows = rows.map((row) => {
         if (row.id === rowId) {
@@ -145,114 +191,125 @@ function Column({ column, rowId, setRows, rows, moveColumn, setSelectedElement }
     }),
   });
 
-  const [{ isDragging }, drag] = useDrag({
-    type: ItemTypes.COLUMN,
-    item: { type: ItemTypes.COLUMN, id: column.id },
-    collect: (monitor) => ({
-      isDragging: monitor.isDragging(),
-    }),
-  });
+  const moveColumn = (direction) => {
+    const rowIndex = rows.findIndex((row) => row.id === rowId);
+    const columnIndex = rows[rowIndex].columns.findIndex((col) => col.id === column.id);
 
-  const deleteColumn = () => {
-    const updatedRows = rows.map((row) => {
-      if (row.id === rowId) {
+    if (
+      (direction === 'left' && columnIndex === 0) ||
+      (direction === 'right' && columnIndex === rows[rowIndex].columns.length - 1)
+    ) {
+      return;
+    }
+
+    const newColumns = [...rows[rowIndex].columns];
+    const [movedColumn] = newColumns.splice(columnIndex, 1);
+    newColumns.splice(direction === 'left' ? columnIndex - 1 : columnIndex + 1, 0, movedColumn);
+
+    const updatedRows = rows.map((row, index) => {
+      if (index === rowIndex) {
         return {
           ...row,
-          columns: row.columns.filter((col) => col.id !== column.id),
+          columns: newColumns,
         };
       }
       return row;
     });
+
     setRows(updatedRows);
   };
 
   return (
-    <div
-      ref={(node) => drag(drop(node))}
-      className={`column ${isOver ? 'hovered-column' : ''}`}
-      style={{ opacity: isDragging ? 0.5 : 1 }}
-      onClick={() => setSelectedElement(column)}
-    >
+    <div ref={drop} className={`column ${isOver ? 'hovered-column' : ''}`}>
       <div className="column-controls">
-        <FontAwesomeIcon icon={faArrowLeft} className="column-control-icon" onClick={() => moveColumn(column.id, 'left')} />
-        <FontAwesomeIcon icon={faArrowRight} className="column-control-icon" onClick={() => moveColumn(column.id, 'right')} />
-        <FontAwesomeIcon icon={faTrash} className="column-control-icon" onClick={deleteColumn} />
+        <button onClick={() => moveColumn('left')}>
+          <FontAwesomeIcon icon={faArrowLeft} />
+        </button>
+        <button onClick={() => moveColumn('right')}>
+          <FontAwesomeIcon icon={faArrowRight} />
+        </button>
+        <button onClick={() => deleteElement(column.id)}>
+          <FontAwesomeIcon icon={faTrash} />
+        </button>
       </div>
       {column.elements.map((element) => (
         <Element
           key={element.id}
           element={element}
-          rowId={rowId}
-          columnId={column.id}
-          rows={rows}
-          setRows={setRows}
-          setSelectedElement={setSelectedElement}
+          setSelectedElementId={setSelectedElementId}
+          isSelected={selectedElementId === element.id}
+          elementData={elementData[element.id] || { content: 'Text Element', styles: {} }}
+          updateElementContent={updateElementContent}
+          deleteElement={deleteElement}
         />
       ))}
     </div>
   );
 }
 
-function Element({ element, rowId, columnId, rows, setRows, setSelectedElement }) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [content, setContent] = useState(element.content || '');
+function Element({ element, setSelectedElementId, isSelected, elementData, updateElementContent, deleteElement }) {
+  const [localContent, setLocalContent] = useState(elementData.content || 'Text Element');
 
-  const toggleEditing = () => {
-    setIsEditing(!isEditing);
+  // Update local content when elementData.content changes externally
+  useEffect(() => {
+    setLocalContent(elementData.content || 'Text Element');
+  }, [elementData.content]);
+
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setSelectedElementId(element.id);
   };
 
-  const handleContentChange = (e) => {
-    setContent(e.target.value);
+  // Handle content change locally to prevent cursor jumping
+  const handleContentChange = (content) => {
+    setLocalContent(content);
   };
 
+  // Update global content only when editing is done
   const handleBlur = () => {
-    const updatedRows = rows.map((row) => {
-      if (row.id === rowId) {
-        return {
-          ...row,
-          columns: row.columns.map((col) => {
-            if (col.id === columnId) {
-              return {
-                ...col,
-                elements: col.elements.map((el) => {
-                  if (el.id === element.id) {
-                    return {
-                      ...el,
-                      content,
-                    };
-                  }
-                  return el;
-                }),
-              };
-            }
-            return col;
-          }),
-        };
-      }
-      return row;
-    });
-    setRows(updatedRows);
-    setIsEditing(false);
+    updateElementContent(element.id, localContent);
+  };
+
+  // Default styles if none are provided
+  const defaultStyles = {
+    fontSize: '16px',
+    color: '#000000',
+    padding: '10px',
+    border: '1px solid #ccc',
+    margin: '10px 0',
+  };
+
+  const appliedStyles = {
+    ...defaultStyles,
+    ...elementData.styles,
   };
 
   return (
     <div
-      className="element"
-      onClick={() => {
-        toggleEditing();
-        setSelectedElement(element);
-      }}
+      id={element.id}
+      className={`element ${isSelected ? 'selected' : ''}`}
+      onClick={handleClick}
+      style={appliedStyles}
     >
-      {isEditing ? (
-        <input
-          type="text"
-          value={content}
+      <button
+        className="delete-element-button"
+        onClick={(e) => {
+          e.stopPropagation();
+          deleteElement(element.id);
+        }}
+      >
+        <FontAwesomeIcon icon={faTrash} />
+      </button>
+      {isSelected ? (
+        <ReactQuill
+          value={localContent}
           onChange={handleContentChange}
           onBlur={handleBlur}
-          autoFocus
+          theme="snow"
+          style={{ width: '100%', minHeight: '80px' }}
         />
       ) : (
-        <span>{content || 'Text Element'}</span>
+        <div dangerouslySetInnerHTML={{ __html: localContent }} />
       )}
     </div>
   );
